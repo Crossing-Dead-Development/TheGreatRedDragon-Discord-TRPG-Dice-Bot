@@ -92,7 +92,8 @@ def evaluate_expr(expr):
     _, final_det = evaluate_base(expr)
     
     return final_val, final_det
-# --- 4. 機器人主體與設定[cite: 2, 3] ---
+    
+# --- 4. 機器人主體與設定---
 class MyBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -140,7 +141,7 @@ async def on_ready():
     await bot.change_presence(status=discord.Status.online, activity=custom_status)
     print(f'Mephistopheles  已上線')
 
-# --- 5. 訊息指令整合 (包含朋友的新功能) ---
+# --- 5. 訊息指令整合 ---
 @bot.event
 async def on_message(message):
     if message.author == bot.user: return
@@ -393,7 +394,7 @@ async def choose(interaction: discord.Interaction, options: str):
     if not opt_list:
         await interaction.response.send_message("請提供選項！", ephemeral=True)
         return
-    await interaction.response.send_message(f"{interaction.user.mention}\n選項：{'/'.join(opt_list)}\n啵! → **{random.choice(opt_list)}**")
+    await interaction.response.send_message(f"{interaction.user.mention}\n選項：{'/'.join(opt_list)}\n→ **{random.choice(opt_list)}**")
 
 @bot.tree.command(name="cc檢定", description="屬性或技能檢定 (1D100)")
 @app_commands.describe(target="成功率 (技能值)", event="檢定項目名稱")
@@ -410,7 +411,7 @@ async def cc_slash(interaction: discord.Interaction, target: int, event: str = "
 @bot.tree.command(name="一般擲骰", description="支援+-和*語法")
 async def r_slash(interaction: discord.Interaction, dice: str, event: str = ""):
     val, det = evaluate_expr(dice.lower())
-    await interaction.response.send_message(f"{interaction.user.mention} {event}\n{dice}\n結果：{det}\n# 啵! → {val}\n")
+    await interaction.response.send_message(f"{interaction.user.mention} {event}\n{dice}\n結果：{det}\n→ {val}\n")
 
 @bot.tree.command(name="ccrt", description="狂氣發作 - 即時症狀 (持續 1D10 輪)")
 async def ccrt_slash(interaction: discord.Interaction):
