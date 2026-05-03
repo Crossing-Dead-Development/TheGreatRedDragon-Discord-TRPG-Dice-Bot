@@ -25,5 +25,5 @@
 * **雙介面支援**：所有主要功能同時支援 **傳統訊息指令** (以 `!` 開頭) 與 **斜線指令** (`Slash Commands`)。[cite: 4]
 * **Windows 系統匣整合**：具備圖標顯示功能，可透過電腦右下角的系統匣直接關閉機器人。[cite: 4]
 
-## 👥 CDD 是誰？
+## CDD 是誰？
 - **Crossing Dead Development** (跨越死亡開發)，由 Discord 用戶 `@siegestor` 與它的苦命朋友們共同組成。
