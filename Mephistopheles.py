@@ -65,48 +65,53 @@ def evaluate_expr(expr):
     """解析並計算算式，回傳 (總和, 詳細過程)"""
     
     def evaluate_base(sub_expr):
-        # 移除空格以便處理
         sub_expr = sub_expr.replace(" ", "")
         display_det = sub_expr 
         calc_expr = sub_expr
         
-        # 1. 處理 NdS 骰子格式 (例如 1d3)
+        # 1. 處理 NdS 骰子格式 (例如 1d100)
         dice_found = re.findall(r'(\d+)d(\d+)', sub_expr)
         for n, sd in dice_found:
             rolls = [random.randint(1, int(sd)) for _ in range(int(n))]
             s = sum(rolls)
-            # 將 1d3 替換成過程 [1+2]
             roll_str = f"[{'+'.join(map(str, rolls))}]"
             display_det = display_det.replace(f"{n}d{sd}", roll_str, 1)
-            # 將 1d3 替換成數值 (3) 用於計算
             calc_expr = calc_expr.replace(f"{n}d{sd}", f"({s})", 1)
         
         try:
-            # 只允許數學運算字元進入 eval
             safe_expr = re.sub(r'[^\d\+\-\*\/\(\)\.]', '', calc_expr)
             final_v = eval(safe_expr)
             return int(final_v), display_det
         except:
             return 0, sub_expr
 
-    # --- 修正乘法與括號邏輯 ---
+    # --- 修正後的統一處理邏輯 ---
+    # 先處理乘法語法補完
     normalized_expr = re.sub(r'(\d+)\(', r'\1*(', expr)
     
-    # 3. 處理括號內容展開 (為了顯示詳細過程)
-    while "(" in normalized_expr:
-        # 尋找最內層的括號內容
-        match = re.search(r'\(([^()]+)\)', normalized_expr)
+    # 使用一個變數來保存最終的顯示過程，避免多次擲骰
+    if "(" not in normalized_expr and "d" in normalized_expr:
+        return evaluate_base(normalized_expr)
+    
+    # 如果有括號 (如 3(1d3))，則需要遞迴解析
+    current_expr_for_calc = normalized_expr
+    current_expr_for_show = expr
+    
+    while "(" in current_expr_for_calc:
+        match = re.search(r'\(([^()]+)\)', current_expr_for_calc)
         if not match: break
         
         inner_content = match.group(1)
         val, det = evaluate_base(inner_content)
         
-        normalized_expr = normalized_expr.replace(f"({inner_content})", str(val), 1)
-        expr = expr.replace(f"({inner_content})", f"{det}", 1)
+        # 計算用：替換成純數字
+        current_expr_for_calc = current_expr_for_calc.replace(f"({inner_content})", str(val), 1)
+        # 顯示用：替換成過程 det
+        current_expr_for_show = current_expr_for_show.replace(f"({inner_content})", f"{det}", 1)
 
-    # 最終計算
-    final_val, _ = evaluate_base(normalized_expr)
-    _, final_det = evaluate_base(expr)
+    # 最終結果計算
+    final_val, _ = evaluate_base(current_expr_for_calc)
+    _, final_det = evaluate_base(current_expr_for_show)
     
     return final_val, final_det
     
