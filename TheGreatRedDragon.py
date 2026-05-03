@@ -6,6 +6,14 @@ import re
 import asyncio
 import threading
 import pystray
+import discord
+from discord import app_commands
+from discord.ext import commands
+import random
+import re
+import asyncio
+import threading
+import pystray
 from PIL import Image
 import sys
 import os
@@ -161,7 +169,7 @@ async def on_ready():
     # 使用你原本帥氣的自定義狀態
     custom_status = discord.CustomActivity(name="🔥 前往地獄。")
     await bot.change_presence(status=discord.Status.online, activity=custom_status)
-    print(f'Mephistopheles  已上線')
+    print(f'TheGreatRedDragon  已上線')
 
 # --- 5. 訊息指令整合 ---
 @bot.event
@@ -578,8 +586,8 @@ def setup_tray():
         image = Image.open(icon_path)
     except:
         image = Image.new('RGB', (64, 64), (255, 0, 0))
-    menu = pystray.Menu(pystray.MenuItem('關閉 Mephistopheles', quit_window))
-    icon = pystray.Icon("Mephistopheles", image, "Mephistopheles 擲骰機器人", menu)
+    menu = pystray.Menu(pystray.MenuItem('關閉 TheGreatRedDragon', quit_window))
+    icon = pystray.Icon("TheGreatRedDragon", image, "TheGreatRedDragon 擲骰機器人", menu)
     icon.run()
 
 # --- 8. 啟動入口 ---
