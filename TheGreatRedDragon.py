@@ -6,14 +6,6 @@ import re
 import asyncio
 import threading
 import pystray
-import discord
-from discord import app_commands
-from discord.ext import commands
-import random
-import re
-import asyncio
-import threading
-import pystray
 from PIL import Image
 import sys
 import os
@@ -167,7 +159,7 @@ bot = MyBot()
 @bot.event
 async def on_ready():
     # 使用你原本帥氣的自定義狀態
-    custom_status = discord.CustomActivity(name="🔥 前往地獄。")
+    custom_status = discord.CustomActivity(name="天啟預言的末日。")
     await bot.change_presence(status=discord.Status.online, activity=custom_status)
     print(f'TheGreatRedDragon  已上線')
 
