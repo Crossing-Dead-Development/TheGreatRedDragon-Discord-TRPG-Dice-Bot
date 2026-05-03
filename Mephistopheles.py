@@ -43,6 +43,23 @@ class DiceButton(discord.ui.Button):
         content = self.details if len(self.details) < 2000 else self.details[:1990] + "..."
         await interaction.response.send_message(content, ephemeral=False)
 
+class SecretDiceView(discord.ui.View):
+    def __init__(self, gm_user, result_text):
+        super().__init__(timeout=600)
+        self.gm_user = gm_user
+        self.result_text = result_text
+
+    @discord.ui.button(label="傳送結果給 GM", style=discord.ButtonStyle.danger)
+    async def send_to_gm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            # 傳送私訊給指定 GM
+            await self.gm_user.send(f"來自 {interaction.user.name} 的暗骰結果：\n{self.result_text}")
+            button.disabled = True
+            button.label = "已傳送給 GM"
+            await interaction.response.edit_message(view=self)
+        except discord.Forbidden:
+            await interaction.response.send_message("無法傳送私訊給該 GM，請確認對方已開啟私訊功能。", ephemeral=True)
+
 # --- 2. 核心計算引擎 ---
 def evaluate_expr(expr):
     """解析並計算算式，回傳 (總和, 詳細過程)"""
@@ -388,6 +405,56 @@ def roll_dice(dice_str: str) -> int:
         return 0
 
 # --- 6. 斜線指令整合 ---
+
+@bot.tree.command(name="暗骰", description="暗骰功能：可選擇僅自己看見，或額外轉發給指定 GM")
+@app_commands.describe(
+    expr="骰子算式或 CC 目標 (例如: 1d100, 2d6+5, 或技能值 50)",
+    target_gm="選擇要接收結果的 GM (選填)",
+    is_cc="這是否為 CC 檢定？(預設為否)",
+    event="檢定項目名稱 (選填)"
+)
+async def secret_dice_slash(
+    interaction: discord.Interaction, 
+    expr: str, 
+    is_cc: bool = False,
+    target_gm: discord.Member = None,
+    event: str = "暗骰檢定"
+):
+    # 1. 執行運算邏輯
+    if is_cc:
+        try:
+            target = int(expr)
+            res = random.randint(1, 100)
+            status = get_coc_status(res, target)
+            final_text = (
+                f"**{event} (CC 暗骰)**\n"
+                f"判定：1D100 ≤ {target}\n"
+                f"結果：{res} → **{status}**"
+            )
+        except ValueError:
+            await interaction.response.send_message("CC 檢定請輸入純數字（目標值）", ephemeral=True)
+            return
+    else:
+        val, det = evaluate_expr(expr.lower())
+        final_text = (
+            f"**{event} (NdS 暗骰)**\n"
+            f"算式：{expr}\n"
+            f"過程：{det}\n"
+            f"結果：**{val}**"
+        )
+
+    # 2. 判斷回覆方式
+    response_msg = f"{interaction.user.mention} 進行了暗骰：\n{final_text}"
+    
+    # 建立 View (如果有指定 GM)
+    view = SecretDiceView(target_gm, final_text) if target_gm else None
+    
+    # 發送 ephemeral 訊息 (只有發起者看得到)
+    await interaction.response.send_message(
+        f"這是您的暗骰結果：\n{final_text}" + (f"\n\n(點擊下方按鈕傳送給 {target_gm.display_name})" if target_gm else ""),
+        view=view,
+        ephemeral=True
+
 @bot.tree.command(name="隨機", description="隨機選擇選項")
 async def choose(interaction: discord.Interaction, options: str):
     opt_list = options.split()
