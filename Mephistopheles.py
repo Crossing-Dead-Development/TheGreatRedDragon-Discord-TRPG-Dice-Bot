@@ -420,11 +420,15 @@ async def secret_dice_slash(
     target_gm: discord.Member = None,
     event: str = "暗骰檢定"
 ):
+    # 確保傳入 evaluate_expr 的字串是乾淨且小寫的
+    clean_expr = expr.strip().lower()
+
     # 1. 執行運算邏輯
     if is_cc:
         try:
-            target = int(expr)
+            target = int(clean_expr)
             res = random.randint(1, 100)
+            # 使用您定義好的 get_coc_status
             status = get_coc_status(res, target)
             final_text = (
                 f"**{event} (CC 暗骰)**\n"
@@ -435,25 +439,28 @@ async def secret_dice_slash(
             await interaction.response.send_message("CC 檢定請輸入純數字（目標值）", ephemeral=True)
             return
     else:
-        val, det = evaluate_expr(expr.lower())
+        # 正確呼叫 evaluate_expr 並獲取回傳值
+        val, det = evaluate_expr(clean_expr)
+        
+        # 修正：確保顯示的算式與過程清晰
         final_text = (
-            f"**{event} (NdS 暗骰)**\n"
+            f"**{event} (暗骰)**\n"
             f"算式：{expr}\n"
             f"過程：{det}\n"
             f"結果：**{val}**"
         )
 
-    # 2. 判斷回覆方式
-    response_msg = f"{interaction.user.mention} 進行了暗骰：\n{final_text}"
-    
-    # 建立 View (如果有指定 GM)
+    # 2. 建立發送給 GM 的 View (參考 SecretDiceView)
     view = SecretDiceView(target_gm, final_text) if target_gm else None
     
-    # 發送 ephemeral 訊息 (只有發起者看得到)
+    # 3. 發送 ephemeral 訊息 (只有發起者看得到)
+    # 加上 Emoji 提示訊息狀態
     await interaction.response.send_message(
-        f"這是您的暗骰結果：\n{final_text}" + (f"\n\n(點擊下方按鈕傳送給 {target_gm.display_name})" if target_gm else ""),
+        f"**這是您的暗骰結果：**\n\n{final_text}" + 
+        (f"\n\n按下方按鈕將此結果轉發給 GM: **{target_gm.display_name}**" if target_gm else ""),
         view=view,
         ephemeral=True
+    )
 
 @bot.tree.command(name="隨機", description="隨機選擇選項")
 async def choose(interaction: discord.Interaction, options: str):
