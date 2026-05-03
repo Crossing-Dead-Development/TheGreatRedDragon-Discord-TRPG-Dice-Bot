@@ -46,46 +46,52 @@ class DiceButton(discord.ui.Button):
 # --- 2. 核心計算引擎 ---
 def evaluate_expr(expr):
     """解析並計算算式，回傳 (總和, 詳細過程)"""
+    
     def evaluate_base(sub_expr):
+        # 移除空格以便處理
+        sub_expr = sub_expr.replace(" ", "")
         display_det = sub_expr 
         calc_expr = sub_expr
         
-        # 尋找所有 NdS 格式
+        # 1. 處理 NdS 骰子格式 (例如 1d3)
         dice_found = re.findall(r'(\d+)d(\d+)', sub_expr)
         for n, sd in dice_found:
             rolls = [random.randint(1, int(sd)) for _ in range(int(n))]
             s = sum(rolls)
+            # 將 1d3 替換成過程 [1+2]
             roll_str = f"[{'+'.join(map(str, rolls))}]"
             display_det = display_det.replace(f"{n}d{sd}", roll_str, 1)
+            # 將 1d3 替換成數值 (3) 用於計算
             calc_expr = calc_expr.replace(f"{n}d{sd}", f"({s})", 1)
         
         try:
-            # 清理非數學符號後計算
-            final_v = eval(re.sub(r'[^\d\+\-\*\/\(\)]', '', calc_expr))
-            return final_v, display_det
+            # 只允許數學運算字元進入 eval
+            safe_expr = re.sub(r'[^\d\+\-\*\/\(\)\.]', '', calc_expr)
+            final_v = eval(safe_expr)
+            return int(final_v), display_det
         except:
             return 0, sub_expr
 
-    # 處理 2(1d3) 格式，使其顯示為 2[結果]
-    multi_matches = re.finditer(r'(\d+)\(([\dd\+\-]+)\)', expr)
-    final_display = expr
-    final_calc = expr
+    # --- 修正乘法與括號邏輯 ---
+    normalized_expr = re.sub(r'(\d+)\(', r'\1*(', expr)
     
-    for m in multi_matches:
-        full_match = m.group(0)
-        mult = int(m.group(1))
-        inner = m.group(2)
+    # 3. 處理括號內容展開 (為了顯示詳細過程)
+    while "(" in normalized_expr:
+        # 尋找最內層的括號內容
+        match = re.search(r'\(([^()]+)\)', normalized_expr)
+        if not match: break
         
-        # 取得括號內的結果與過程
-        inner_val, inner_det = evaluate_base(inner)
+        inner_content = match.group(1)
+        val, det = evaluate_base(inner_content)
         
-        # 組合顯示字串 (例如: 2[1+2]) 與 計算字串 (例如: 2*3)
-        final_display = final_display.replace(full_match, f"{mult}{inner_det}", 1)
-        final_calc = final_calc.replace(full_match, f"({mult}*{inner_val})", 1)
+        normalized_expr = normalized_expr.replace(f"({inner_content})", str(val), 1)
+        expr = expr.replace(f"({inner_content})", f"{det}", 1)
 
-    # 進行最終計算
-    return evaluate_base(final_display if "(" not in final_display else final_calc)
-
+    # 最終計算
+    final_val, _ = evaluate_base(normalized_expr)
+    _, final_det = evaluate_base(expr)
+    
+    return final_val, final_det
 # --- 4. 機器人主體與設定[cite: 2, 3] ---
 class MyBot(commands.Bot):
     def __init__(self):
