@@ -9,6 +9,9 @@ import pystray
 from PIL import Image
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- 1. 路徑與資源處理 ---
 def resource_path(relative_path):
@@ -17,16 +20,6 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # --- 按鈕類別 ---
-class DiceButton(discord.ui.Button):
-    def __init__(self, label, details):
-        super().__init__(label=label, style=discord.ButtonStyle.primary)
-        self.details = details
-
-    async def callback(self, interaction: discord.Interaction):
-        # 確保內容不超過 Discord 的 2000 字限制
-        content = self.details if len(self.details) < 2000 else self.details[:1990] + "..."
-        await interaction.response.send_message(content, ephemeral=False)
-
 class DiceView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=600)
@@ -291,99 +284,85 @@ async def on_message(message):
                 await message.channel.send(f"{message.author.mention} {evt}\n\n{expr}\n結果：{det}\n總和：{val}\n")
                 return
 
-    await bot.process_commands(message)
-
-    # [6] CCRT 與 CCSU 
+    # [6] CCRT 與 CCSU
     if low_content == "!ccrt":
         res = random.randint(1, 10)
-        duration = random.randint(1, 10) # 額外擲 1D10 輪
+        duration = random.randint(1, 10)
         await message.reply(f"**狂氣發作 - 即時症狀**\n持續輪數：{duration} 輪\n{MADNESS_DATA['RT'][res]}\n")
         return
 
     if low_content == "!ccsu":
         res = random.randint(1, 10)
-        duration = random.randint(1, 10) # 額外擲 1D10 小時
+        duration = random.randint(1, 10)
         await message.reply(f"**狂氣發作 - 總結症狀**\n持續時間：{duration} 小時\n{MADNESS_DATA['SU'][res]}\n")
         return
 
-# [7] SC 理智檢定修正版 (格式: !sc 成功率 基礎值/失敗額外骰子)
+    # [7] SC 理智檢定 (格式: !sc 成功率 基礎值/失敗額外骰子)
     if low_content.startswith("!sc"):
-        # 正則解析：!sc 成功率 基礎/失敗骰
-        # 例如：!sc 50 1/1d3
         match = re.match(r'^!sc\s+(\d+)\s+([\dd\+\-]+)/([\dd\+\-]+)(.*)', low_content)
         if match:
             target = int(match.group(1))
-            base_val_expr = match.group(2)    # 成功的基礎扣除點數
-            fail_extra_expr = match.group(3)  # 失敗時額外加骰的算式
+            base_val_expr = match.group(2)
+            fail_extra_expr = match.group(3)
             event = match.group(4).strip()
-            
-            # 1. 進行理智檢定 (1D100)
+
             res = random.randint(1, 100)
             is_success = res <= target
-            
+
             status = "成功" if is_success else "失敗"
             if res <= 5: status = "★大成功！"
             elif res >= 96: status = "✘大失敗！"
-            
-            # 2. 計算損害
-            # 先算出基礎值 (base)
+
             base_dmg, base_det = evaluate_expr(base_val_expr)
-            
+
             if is_success:
-                # 成功：只扣基礎值
                 final_val = base_dmg
                 final_det = base_det
             else:
-                # 失敗：基礎值 + 失敗額外骰子
                 extra_dmg, extra_det = evaluate_expr(fail_extra_expr)
                 final_val = base_dmg + extra_dmg
                 final_det = f"{base_det} + {extra_det}"
-            
-            # 3. 輸出訊息
+
             output = [
                 f"{message.author.mention} **理智檢定 (Sanity Check)** {event}",
                 f"1D100 ≤ {target} | 結果：{res} → **{status}**",
                 f"理智損害：{final_det} = **{final_val}** 點"
             ]
-            
+
             await message.channel.send("\n".join(output))
             return
 
-# [8] CG 成長檢定修正版 (支援多重目標)
+    # [8] CG 成長檢定 (支援多重目標)
     if low_content.startswith("!cg"):
-        # 取得指令後的內容
         cmd_text = content[3:].strip()
-        # 使用正則表達式找出所有的「數字」與其後的「文字說明」
-        # 匹配格式：數字 + (選填的非數字名稱)
         matches = re.findall(r'(\d+)\s*([^\d,]*)', cmd_text)
-        
+
         if not matches:
             await message.reply("格式錯誤！請輸入如 `!cg 50 騎乘 60 鬥毆` 或 `!cg 50 60`")
             return
 
         output = [f"{message.author.mention} **技能成長檢定**"]
-        
+
         for val_str, name in matches:
             current_val = int(val_str)
             skill_name = name.strip() if name.strip() else "未知技能"
-            
-            # 1. 進行成長判定 (1D100)
+
             res = random.randint(1, 100)
-            # 規則：結果 > 技能值 或 結果 > 95
             is_growth = res > current_val or res > 95
-            
+
             result_text = f"● **{skill_name}** ({current_val}) → 1D100={res}"
-            
+
             if is_growth:
-                # 2. 成長成功，擲 1D10
                 growth_val = random.randint(1, 10)
                 new_val = current_val + growth_val
                 output.append(f"{result_text} | **成功！** (+{growth_val}) → **{new_val}**")
             else:
                 output.append(f"{result_text} | 失敗")
-        
+
         await message.channel.send("\n".join(output))
         return
+
+    await bot.process_commands(message)
 
 # --- 成功結果邏輯 ---
 
@@ -590,5 +569,8 @@ def setup_tray():
 if __name__ == "__main__":
     tray_thread = threading.Thread(target=setup_tray, daemon=True)
     tray_thread.start()
-    
-bot.run('DISCORD_BOT_TOKEN')
+
+    token = os.getenv('DISCORD_BOT_TOKEN')
+    if not token:
+        raise ValueError("DISCORD_BOT_TOKEN 未設定，請在 .env 檔案中設定。")
+    bot.run(token)
