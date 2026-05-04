@@ -5,10 +5,14 @@ import random
 import re
 import asyncio
 import threading
-import pystray
-from PIL import Image
 import sys
 import os
+try:
+    import pystray
+    from PIL import Image
+    TRAY_AVAILABLE = True
+except Exception:
+    TRAY_AVAILABLE = False
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -567,8 +571,9 @@ def setup_tray():
 
 # --- 8. 啟動入口 ---
 if __name__ == "__main__":
-    tray_thread = threading.Thread(target=setup_tray, daemon=True)
-    tray_thread.start()
+    if TRAY_AVAILABLE:
+        tray_thread = threading.Thread(target=setup_tray, daemon=True)
+        tray_thread.start()
 
     token = os.getenv('DISCORD_BOT_TOKEN')
     if not token:
