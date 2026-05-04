@@ -26,7 +26,7 @@
 - **Windows 系統匣整合**：具備圖標顯示功能，可透過電腦右下角的系統匣直接關閉機器人。 
 
 ## CDD 是誰？
-- **Crossing Dead Development** (跨越死亡開發)，由 Discord 用戶 `@siegestor` 與它的苦命朋友們共同組成。
+- **Crossing Dead Development** (跨越死亡開發)，由 Discord 用戶 `@siegestor` 與他的苦命朋友們共同組成。
 
 ### 《隱私權政策》
 https://gist.github.com/EvansGoethe/2da9cebaefaa3cda9ec9102d90d77bec#file-privacy_policy-md
