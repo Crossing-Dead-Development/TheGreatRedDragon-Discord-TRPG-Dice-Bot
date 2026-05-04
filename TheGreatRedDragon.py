@@ -158,7 +158,7 @@ bot = MyBot()
 
 @bot.event
 async def on_ready():
-    # 使用你原本帥氣的自定義狀態
+    # 自定義狀態
     custom_status = discord.CustomActivity(name="天啟預言的末日。")
     await bot.change_presence(status=discord.Status.online, activity=custom_status)
     print(f'TheGreatRedDragon  已上線')
@@ -277,15 +277,19 @@ async def on_message(message):
             await message.channel.send(f"{message.author.mention}\n\n" + "\n".join(res_list) + "\n")
             return
 
-    # [5] 一般單次擲骰
-    dice_start_match = re.match(r'^([\dd\+\-\(\)\*\/]+)(.*)$', low_content)
+# [5] 一般單次擲骰
+    dice_start_match = re.match(r'^(\d+d\d+[\dd\+\-\(\)\*\/]*)(.*)$', low_content)
+    
     if dice_start_match:
         expr = dice_start_match.group(1)
-        if 'd' in expr:
+
+        if re.search(r'\d+d\d+', expr):
             evt = content[len(expr):].strip()
             val, det = evaluate_expr(expr)
-            await message.channel.send(f"{message.author.mention} {evt}\n\n{expr}\n結果：{det}\n總和：{val}\n")
-            return
+            
+            if val != 0 or "[" in det:
+                await message.channel.send(f"{message.author.mention} {evt}\n\n{expr}\n結果：{det}\n總和：{val}\n")
+                return
 
     await bot.process_commands(message)
 
