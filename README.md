@@ -1,8 +1,6 @@
 # 啟示錄紅龍 | TheGreatRedDragon
 這是由 **CDD 團隊** 在Google Gemini AI協助下自主開發的 Discord TRPG 跑團專用擲骰機器人。
 
-![TheGreatRedDragon](https://cdn.discordapp.com/attachments/1058755803198279794/1501947576612688023/TheGreatRedDragon.png?ex=69fded2f&is=69fc9baf&hm=cd351fa010a5e4b1b9e960016eb178367016de94eec35fb361d69238666d9869&)
-
 ## 核心擲骰功能
 - **一般單次擲骰**：支援如 `1d100` 或 `2d6+3` 的算式。 
 - **複雜算式解析**：支援括號與乘法計算，例如 `2(1d6+3)`，並會詳細顯示每顆骰子的點數。 
